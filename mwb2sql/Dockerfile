@@ -5,19 +5,17 @@ MAINTAINER Enrique Gonzalez <goga.enrique@gmail.com>
 ENV DISPLAY=":1"
 ENV PATH=".:$PATH"
 
+# copy files
+COPY m2s mwb2sql.sh /opt/
+
 # install necessary packages
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y git \
-    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -q=2 --no-install-recommends \
     mysql-workbench \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 # set mwb2swl
-WORKDIR /opt
-RUN git clone https://github.com/tomoemon/mwb2sql.git \
-    && chmod u+x /opt/mwb2sql/mwb2sql.sh
-COPY m2s /opt/
-RUN chmod u+x /opt/m2s
+RUN chmod u+x /opt/mwb2sql.sh /opt/m2s
 
 WORKDIR /data
 

@@ -9,7 +9,7 @@ ENV PATH=".:$PATH"
 COPY run.sh mwb2sql.sh /opt/
 
 # install necessary packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN apt-get update && apt-get install -q=2 --no-install-recommends \
     mysql-workbench \
     xvfb \
     && rm -rf /var/lib/apt/lists/*

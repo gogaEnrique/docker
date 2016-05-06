@@ -1,4 +1,4 @@
-!/bin/bash
+#!/bin/bash
 
 if [[ $# -ne 2 ]]; then
     echo -e "Usage: docker run -it --rm -v $(pwd):/data gogaenrique/mwb2sql {MWB input file} {SQL output file}"

@@ -6,18 +6,18 @@ ENV DISPLAY=":1"
 ENV PATH=".:$PATH"
 
 # copy files
-COPY m2s mwb2sql.sh /opt/
+COPY run.sh mwb2sql.sh /opt/
 
 # install necessary packages
-RUN apt-get update && apt-get install -q=2 --no-install-recommends \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     mysql-workbench \
     xvfb \
     && rm -rf /var/lib/apt/lists/*
 
-# set mwb2swl
-RUN chmod u+x /opt/mwb2sql.sh /opt/m2s
+# set permissions
+RUN chmod +x /opt/mwb2sql.sh /opt/run.sh
 
 WORKDIR /data
 
 # set entrypoint
-ENTRYPOINT ["/opt/m2s"]
+ENTRYPOINT ["/opt/run.sh"]

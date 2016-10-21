@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
 import os
 
@@ -9,8 +9,8 @@ def auth(username, password):
     return 0
 
 def main():
-  print 'auth_ok:'auth(os.environ['AUTHD_ACCOUNT'], os.environ['AUTHD_PASSWORD'])
-  print 'dir:/home/'os.environ['AUTHD_ACCOUNT']
+  print 'auth_ok:', auth(os.environ['AUTHD_ACCOUNT'], os.environ['AUTHD_PASSWORD'])
+  print 'dir:/home/', os.environ['AUTHD_ACCOUNT']
   print 'end'
 
 if __name__ == '__main__':

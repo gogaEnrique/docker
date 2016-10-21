@@ -1,37 +1,54 @@
-FROM alpine:3.3
+FROM debian
 MAINTAINER Enrique Gonzalez <goga.enrique@gmail.com>
 
-ENV PUREFTPD_VERSION=1.0.42-r0 \
-    SYSLOG_STDOUT_VERSION=1.1.1 \
-    PURE_CONFDIR=/etc/pureftpd
+#RUN adduser --system --no-create-home --shell /etc _pure-ftpd --force-badname --disabled-password \
+#    && addgroup _pure-ftpd --force-badname \
+#    && adduser _pure-ftpd _pure-ftpd \
+#    && mkdir /etc/pureftpd
 
-RUN url_join() { local pifs="${IFS}"; IFS=/; echo "$*"; IFS="${pifs}"; } \
-    && printf '%s\n' \
-      '@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing' \
-      >> /etc/apk/repositories \
-    && apk update \
-    && apk add pure-ftpd@testing="${PUREFTPD_VERSION}" \
-    && apk add curl=7.49.1-r0 \
-    && apk add python=2.7.12-r0
-    && install -d -o root -g root -m 755 /usr/local/sbin \
-    && curl -ksL \
-      "$(url_join \
-        https://github.com/timonier/syslog-stdout/releases/download \
-        "v${SYSLOG_STDOUT_VERSION}" \
-        syslog-stdout.tar.gz)" \
-      |tar -xvzf - -C /usr/local/sbin \
-    && apk del --purge curl \
-    && rm -rf /var/cache/apk/*
+#RUN apt-get update \
+#    && apt-get install -y pure-ftpd
 
-# user ftpv and /srv/ftp for virtual users, user ftp and /var/lib/ftp
-# for anonymous; these are separate so anonymous cannot read/write
-# virtual users' files (if both enabled)
-RUN adduser -D -h /dev/null -s /etc ftpv \
-    && install -d -o root -g root -m 755 ~ftp /srv/ftp
+# properly setup debian sources
+ENV DEBIAN_FRONTEND noninteractive
+RUN echo "deb http://http.debian.net/debian jessie main\n\
+deb-src http://http.debian.net/debian jessie main\n\
+deb http://http.debian.net/debian jessie-updates main\n\
+deb-src http://http.debian.net/debian jessie-updates main\n\
+deb http://security.debian.org jessie/updates main\n\
+deb-src http://security.debian.org jessie/updates main\n\
+" > /etc/apt/sources.list
+RUN apt-get -y update
 
-COPY pure_defaults.sh /etc/profile.d/
+# install package building helpers
+RUN apt-get -y --force-yes install dpkg-dev debhelper
+
+# install dependancies
+RUN apt-get -y build-dep pure-ftpd
+
+# build from source
+RUN mkdir /tmp/pure-ftpd/ && \
+  cd /tmp/pure-ftpd/ && \
+  apt-get source pure-ftpd && \
+  cd pure-ftpd-* && \
+  sed -i '/^optflags=/ s/$/ --without-capabilities/g' ./debian/rules && \
+  dpkg-buildpackage -b -uc
+
+# install the new deb files
+RUN dpkg -i /tmp/pure-ftpd/pure-ftpd-common*.deb
+RUN apt-get -y install openbsd-inetd
+RUN dpkg -i /tmp/pure-ftpd/pure-ftpd_*.deb
+
+# Prevent pure-ftpd upgrading
+RUN apt-mark hold pure-ftpd pure-ftpd-common
+
+# setup ftpgroup and ftpuser
+RUN groupadd -g 1007 ftpgroup
+RUN useradd -u 1007 -g ftpgroup -d /home/ftpusers -s /dev/null ftpuser
+
+
+
+COPY auth.sh /usr/local/bin/auth
 COPY dkr-init.sh /usr/local/sbin/dkr-init
-COPY adduser-ftp.sh /usr/local/bin/adduser-ftp
-COPY mog-auth.py /usr/local/bin/mog-auth.py
 
 ENTRYPOINT ["/usr/local/sbin/dkr-init"]
